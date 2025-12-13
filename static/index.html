@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドラクエ10 種まき計算ツール</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+
+        :root {
+            --dq-blue-top: #002554;
+            --dq-blue-bottom: #00122a;
+            --dq-border: #c8c8c8;
+            --dq-text: #ffffff;
+            --dq-yellow: #fff200;
+            --dq-input-bg: rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            background-color: #333;
+            /* Simple pattern or dark background */
+            background-image: radial-gradient(#444 10%, transparent 10%),
+            radial-gradient(#444 10%, transparent 10%);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: var(--dq-text);
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .dq-window {
+            background: linear-gradient(180deg, var(--dq-blue-top) 0%, var(--dq-blue-bottom) 100%);
+            border: 3px solid var(--dq-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+        
+        /* Decorative corner flourishes could imply more DQ style, but rounded border is good enough */
+
+        h1, h2, h3 {
+            margin: 0 0 16px 0;
+            text-align: center;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        h2 {
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form-group label {
+            flex: 1;
+            font-weight: bold;
+        }
+
+        .form-control {
+            background: var(--dq-input-bg);
+            border: 1px solid #777;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+            width: 100px;
+            text-align: right;
+        }
+        
+        .form-control.text-left {
+            text-align: left;
+            width: 100%;
+        }
+
+        /* Inventory Grid */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        
+        .inventory-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        /* Character List */
+        .char-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .char-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed rgba(255,255,255,0.3);
+        }
+
+        .char-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .field-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .checkbox-label input {
+            transform: scale(1.5);
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: linear-gradient(180deg, #ff9900 0%, #cc6600 100%);
+            border: 2px solid #fff;
+            color: white;
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 0px #884400;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #884400;
+        }
+        
+        .btn-small {
+            width: auto;
+            padding: 4px 12px;
+            font-size: 0.9rem;
+            background: linear-gradient(180deg, #666 0%, #444 100%);
+            box-shadow: 0 2px 0px #222;
+        }
+        
+        .btn-delete {
+            background: linear-gradient(180deg, #cc0000 0%, #990000 100%);
+            box-shadow: 0 2px 0px #550000;
+            margin-left: 8px;
+        }
+
+        .add-char-box {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .result-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .result-char-block {
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+        
+        .result-crop {
+            color: var(--dq-yellow);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" class="container">
+    <div class="dq-window">
+        <h1>種まき計算ツール</h1>
+        
+        <!-- Section 1: Basic Settings -->
+        <h2>基本設定</h2>
+        <div class="form-group">
+            <label>見込み収穫量 (1畑あたり)</label>
+            <input type="number" v-model.number="baseYield" class="form-control" min="1">
+        </div>
+
+        <div class="form-group" style="align-items: flex-start; flex-direction: column;">
+            <label style="margin-bottom: 8px;">キャラクター編集</label>
+            
+            <div v-for="(char, index) in characters" :key="index" class="char-section">
+                <div class="char-header">
+                    <input type="text" v-model="char.name" class="form-control" style="width: auto; flex-grow: 1; margin-right: 10px; background: rgba(0,0,0,0.2); text-align: left;">
+                    <button class="btn btn-small btn-delete" @click="removeCharacter(index)">削除</button>
+                </div>
+                <!-- Field Settings (Fairy) -->
+                <div class="char-fields">
+                    <div class="field-row">
+                        <span>通常畑 ({{ char.hasFairyNormal ? baseYield * 2 : baseYield }}個)</span>
+                        <label class="checkbox-label">
+                            <input type="checkbox" v-model="char.hasFairyNormal">
+                            妖精あり
+                        </label>
+                    </div>
+                    <div class="field-row">
+                        <span>どこでも畑 ({{ char.hasFairyAnywhere ? baseYield * 2 : baseYield }}個)</span>
+                        <label class="checkbox-label">
+                            <input type="checkbox" v-model="char.hasFairyAnywhere">
+                            妖精あり
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="add-char-box" style="width: 100%;">
+                <input type="text" v-model="newCharName" placeholder="新しいキャラ名" class="form-control text-left" @keyup.enter="addCharacter">
+                <button class="btn btn-small" @click="addCharacter">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Current Inventory -->
+    <div class="dq-window">
+        <h2>現在の保有数</h2>
+        <div class="inventory-grid">
+            <div class="inventory-item" v-for="crop in cropTypes" :key="crop.key">
+                <label>{{ crop.label }}</label>
+                <input type="number" v-model.number="inventory[crop.key]" class="form-control" min="0">
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculate Button -->
+    <div style="margin-bottom: 24px;">
+        <button class="btn" @click="calculate">計算する</button>
+    </div>
+
+    <!-- Section 3: Results -->
+    <div class="dq-window" v-if="results.length > 0">
+        <h2>計算結果</h2>
+        <div class="result-box">
+             <div v-for="(res, index) in results" :key="index" class="result-char-block">
+                 <div style="font-size: 1.1em; margin-bottom: 8px; font-weight: bold;">{{ res.charName }}</div>
+                 <div v-if="res.normalField">
+                     畑: <span class="result-crop">{{ res.normalField.crop }}</span> ({{ res.normalField.yield }}個)
+                 </div>
+                 <div v-if="res.anywhereField">
+                     どこでも畑: <span class="result-crop">{{ res.anywhereField.crop }}</span> ({{ res.anywhereField.yield }}個)
+                 </div>
+             </div>
+             
+             <div style="margin-top: 16px; border-top: 1px dashed white; padding-top: 10px;">
+                 <strong>収穫後の予想保有数:</strong>
+                 <div v-for="crop in cropTypes" :key="'proj-'+crop.key" style="display: flex; justify-content: space-between; margin-top: 4px;">
+                     <span>{{ crop.label }}</span>
+                     <span>{{ projectedInventory[crop.key] }} 個</span>
+                 </div>
+             </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                baseYield: 8,
+                characters: [], // { name: string, hasFairyNormal: bool, hasFairyAnywhere: bool }
+                newCharName: '',
+                cropTypes: [
+                    { key: 'potato', label: 'まんまるポテト' },
+                    { key: 'onion', label: 'ジャンボ玉ネギ' },
+                    { key: 'lettuce', label: 'しゃっきりレタス' },
+                    { key: 'wheat', label: 'ふわふわ小麦' },
+                    { key: 'flower', label: 'ライスフラワー' }
+                ],
+                inventory: {
+                    potato: 0,
+                    onion: 0,
+                    lettuce: 0,
+                    wheat: 0,
+                    flower: 0
+                },
+                results: [],
+                projectedInventory: {}
+            }
+        },
+        mounted() {
+            this.loadSettings();
+            if (this.characters.length === 0) {
+                // Initialize with example user request if empty
+                this.characters.push({ name: 'キャラ1', hasFairyNormal: false, hasFairyAnywhere: false });
+            }
+        },
+        watch: {
+            baseYield() { this.saveSettings(); },
+            characters: {
+                handler() { this.saveSettings(); },
+                deep: true
+            },
+            inventory: {
+                handler() { this.saveSettings(); },
+                deep: true
+            }
+        },
+        methods: {
+            loadSettings() {
+                const saved = localStorage.getItem('dq10farm_settings');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.baseYield) this.baseYield = parsed.baseYield;
+                    if (parsed.characters) this.characters = parsed.characters;
+                    if (parsed.inventory) this.inventory = parsed.inventory;
+                }
+            },
+            saveSettings() {
+                const settings = {
+                    baseYield: this.baseYield,
+                    characters: this.characters,
+                    inventory: this.inventory
+                };
+                localStorage.setItem('dq10farm_settings', JSON.stringify(settings));
+            },
+            addCharacter() {
+                if (!this.newCharName.trim()) return;
+                this.characters.push({
+                    name: this.newCharName,
+                    hasFairyNormal: false,
+                    hasFairyAnywhere: false
+                });
+                this.newCharName = '';
+            },
+            removeCharacter(index) {
+                if(confirm('本当に削除しますか？')) {
+                    this.characters.splice(index, 1);
+                }
+            },
+            calculate() {
+                // 1. Setup projection map
+                const current = { ...this.inventory };
+                
+                // 2. Gather all field slots available
+                // Each slot: { charName, type: 'normal'|'anywhere', yieldAmount }
+                let slots = [];
+                this.characters.forEach(char => {
+                    slots.push({
+                        charName: char.name,
+                        type: 'normal',
+                        yieldAmount: char.hasFairyNormal ? this.baseYield * 2 : this.baseYield
+                    });
+                    slots.push({
+                        charName: char.name,
+                        type: 'anywhere',
+                        yieldAmount: char.hasFairyAnywhere ? this.baseYield * 2 : this.baseYield
+                    });
+                });
+
+                // 3. Sort slots by yield amount descending (Greedy approach: fill biggest buckets to lowest crop counts first)
+                slots.sort((a, b) => b.yieldAmount - a.yieldAmount);
+
+                // 4. Assign
+                const assignments = []; // { slotRef, cropKey, allocatedAmount }
+
+                // Helper to find crop with min count
+                const getMinCropKey = (currentCounts) => {
+                    let minKey = this.cropTypes[0].key;
+                    let minVal = currentCounts[minKey];
+                    
+                    for (let i = 1; i < this.cropTypes.length; i++) {
+                        const k = this.cropTypes[i].key;
+                        if (currentCounts[k] < minVal) {
+                            minKey = k;
+                            minVal = currentCounts[k];
+                        }
+                    }
+                    return minKey;
+                };
+
+                slots.forEach(slot => {
+                    const bestCrop = getMinCropKey(current);
+                    current[bestCrop] += slot.yieldAmount;
+                    
+                    assignments.push({
+                        ...slot,
+                        cropKey: bestCrop,
+                        cropLabel: this.cropTypes.find(c => c.key === bestCrop).label
+                    });
+                });
+
+                // 5. Structure results for visualization
+                // Group by character
+                const resMap = {};
+                this.characters.forEach(c => {
+                    resMap[c.name] = { charName: c.name, normalField: null, anywhereField: null };
+                });
+                
+                assignments.forEach(a => {
+                    const target = resMap[a.charName];
+                    if (a.type === 'normal') {
+                        target.normalField = { crop: a.cropLabel, yield: a.yieldAmount };
+                    } else {
+                        target.anywhereField = { crop: a.cropLabel, yield: a.yieldAmount };
+                    }
+                });
+
+                this.results = Object.values(resMap);
+                this.projectedInventory = current;
+                
+                // Scroll to results
+                this.$nextTick(() => {
+                    const el = document.querySelector('.result-box');
+                    if(el) el.scrollIntoView({ behavior: 'smooth' });
+                });
+            }
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
