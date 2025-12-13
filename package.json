@@ -1,6 +1,7 @@
 {
   "name": "dq10-farm",
   "scripts": {
+    "dev": "wrangler dev",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
