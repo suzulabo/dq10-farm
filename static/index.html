@@ -427,6 +427,45 @@
                     });
                 });
 
+                // --- NEW: Post-process sort to improve presentation ---
+                // Group assignments by yield amount to allow swapping within same-sized fields
+                const assignmentsByYield = {};
+                assignments.forEach(a => {
+                    if (!assignmentsByYield[a.yieldAmount]) assignmentsByYield[a.yieldAmount] = [];
+                    assignmentsByYield[a.yieldAmount].push(a);
+                });
+
+                // Define crop priority order
+                const cropOrder = ['potato', 'onion', 'lettuce', 'wheat', 'flower'];
+                
+                // For each yield group, sort slots by user-order and crops by priority
+                Object.values(assignmentsByYield).forEach(group => {
+                    // 1. Sort slots by Character Index (already implicit in char name? No, need original index)
+                    // We can rely on the fact that 'slots' was originally constructed in char order.
+                    // Let's reconstruct the sort key: charIndex * 10 + fieldType (0=normal, 1=anywhere)
+                    
+                    // To do this robustly, we map charName back to index.
+                    group.sort((a, b) => {
+                        const idxA = this.characters.findIndex(c => c.name === a.charName);
+                        const idxB = this.characters.findIndex(c => c.name === b.charName);
+                        if (idxA !== idxB) return idxA - idxB;
+                        // specific field order: normal then anywhere
+                        const typeScore = (t) => t === 'normal' ? 0 : 1;
+                        return typeScore(a.type) - typeScore(b.type);
+                    });
+
+                    // 2. Extract crops and sort them
+                    const crops = group.map(a => a.cropKey);
+                    crops.sort((a, b) => cropOrder.indexOf(a) - cropOrder.indexOf(b));
+
+                    // 3. Re-assign
+                    group.forEach((assign, i) => {
+                        assign.cropKey = crops[i];
+                        assign.cropLabel = this.cropTypes.find(c => c.key === crops[i]).label;
+                    });
+                });
+                // -----------------------------------------------------
+
                 // 5. Structure results for visualization
                 // Group by character
                 const resMap = {};
