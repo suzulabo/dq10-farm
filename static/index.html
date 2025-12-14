@@ -45,6 +45,8 @@
             margin-bottom: 24px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
         
         /* Decorative corner flourishes could imply more DQ style, but rounded border is good enough */
@@ -113,6 +115,8 @@
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 16px;
+            align-self: stretch;
+            max-width: 400px;
         }
         
         .char-header {
@@ -229,7 +233,7 @@
             
             <div v-for="(char, index) in characters" :key="index" class="char-section">
                 <div class="char-header">
-                    <input type="text" v-model="char.name" class="form-control" style="width: auto; flex-grow: 1; margin-right: 10px; background: rgba(0,0,0,0.2); text-align: left;">
+                    <input type="text" v-model="char.name" class="form-control" style="flex-grow: 1; margin-right: 10px; background: rgba(0,0,0,0.2); text-align: left;">
                     <button class="btn btn-small btn-delete" @click="removeCharacter(index)">削除</button>
                 </div>
                 <!-- Field Settings (Fairy) -->
