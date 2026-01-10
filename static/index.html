@@ -225,7 +225,7 @@
         <h2>基本設定</h2>
         <div class="form-group">
             <label>見込み収穫量 (1畑あたり)</label>
-            <input type="number" v-model.number="baseYield" class="form-control" min="1">
+            <input type="number" v-model.number="baseYield" class="form-control" min="1" @focus="focusInput($data, 'baseYield')" @blur="blurInput($data, 'baseYield', 8)">
         </div>
 
         <div class="form-group" style="align-items: flex-start; flex-direction: column;">
@@ -268,7 +268,7 @@
         <div class="inventory-grid">
             <div class="inventory-item" v-for="crop in cropTypes" :key="crop.key">
                 <label>{{ crop.label }}</label>
-                <input type="number" v-model.number="inventory[crop.key]" class="form-control" min="0">
+                <input type="number" v-model.number="inventory[crop.key]" class="form-control" min="0" @focus="focusInput(inventory, crop.key)" @blur="blurInput(inventory, crop.key)">
             </div>
         </div>
     </div>
@@ -327,7 +327,9 @@
                     flower: 0
                 },
                 results: [],
-                projectedInventory: {}
+                results: [],
+                projectedInventory: {},
+                tempValue: null
             }
         },
         mounted() {
@@ -349,6 +351,16 @@
             }
         },
         methods: {
+            focusInput(target, key) {
+                this.tempValue = target[key];
+                target[key] = '';
+            },
+            blurInput(target, key, defaultVal = 0) {
+                if (target[key] === '' || target[key] === null) {
+                    target[key] = (this.tempValue !== null && this.tempValue !== '') ? this.tempValue : defaultVal;
+                }
+                this.tempValue = null;
+            },
             loadSettings() {
                 const saved = localStorage.getItem('dq10farm_settings');
                 if (saved) {
